@@ -2,10 +2,10 @@ name: continuous-integration
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 jobs:
   ubuntu:
     runs-on: ubuntu-latest
