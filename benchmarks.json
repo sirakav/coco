@@ -1,10 +1,4 @@
 [
-  {
-    "Version": "149d1df15046f4d66fa79a66b04be19639ba2217",
-    "Date": 1660901974,
-    "Tags": [
-      "ref=refs/heads/workflows"
-    ],
-    "Suites": []
-  }
+  {"Version":"68dbf3d4f1452cbb5340ec4c617f63ba924d22d0","Date":1660902322,"Tags":["ref=refs/heads/workflows"],"Suites":[]},
+  {"Version":"149d1df15046f4d66fa79a66b04be19639ba2217","Date":1660901974,"Tags":["ref=refs/heads/workflows"],"Suites":[]}
 ]
