@@ -58,3 +58,16 @@ func TestCityNameToCountryISO2(t *testing.T) {
 		t.Error("Expected FR, got", ci.CountryCode)
 	}
 }
+
+// Benchmark CountryNameToCountry
+func BenchmarkCountryNameToCountryRegex(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		cc.CountryNameToCountry("Dem. People's Rep. of Korea", "")
+	}
+}
+
+func BenchmarkCountryNameToCountryISO2(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		cc.CountryNameToCountry("KP", "ISO2")
+	}
+}
