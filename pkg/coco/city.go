@@ -233,20 +233,6 @@ func (c *CityDB) getCityDataFromQuery(q string, a ...any) []*CityData {
 	return o
 }
 
-func (c *CityDB) getGEONameIDFromAlternateName(an string) (int, error) {
-	stmt, err := c.db.Prepare("SELECT geonameid FROM alternatenames WHERE alternatename = ? COLLATE NOCASE")
-	if err != nil {
-		panic(err)
-	}
-	defer stmt.Close()
-
-	var geonameid int
-	if err := stmt.QueryRow(an).Scan(&geonameid); err != nil {
-		return 0, err
-	}
-	return geonameid, nil
-}
-
 // Returns city with highest population for the given city name
 // Perfomance scales non linearly as first we try to match the city name
 // than the ASCIIName and finally the AlternateNames which contains
@@ -268,12 +254,7 @@ func (c *COCO) CityNameToCity(name string, extendedSearch bool) (*CityData, erro
 
 		}
 
-		geoNameID, err := c.CityDB.getGEONameIDFromAlternateName(name)
-		if err != nil {
-			return &CityData{}, errors.New("city not found")
-		}
-
-		ci = c.CityDB.getCityDataFromQuery("SELECT * FROM cities WHERE geonameid = ? ORDER BY population DESC LIMIT 1;", geoNameID)
+		ci := c.CityDB.getCityDataFromQuery("SELECT cities.* FROM cities INNER JOIN alternatenames ON cities.geonameid = alternatenames.geonameid WHERE alternatenames.alternatename = ? COLLATE NOCASE ORDER BY population DESC LIMIT 1;", name)
 		if len(ci) > 0 {
 			return ci[0], nil
 		}
