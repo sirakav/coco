@@ -102,25 +102,39 @@ func loadCityData() []*CityData {
 }
 
 func (c *CityDB) createIndexes() {
+	// Cities indexes
 	_, err := c.db.Exec("CREATE INDEX name ON cities (name COLLATE NOCASE);")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
+	}
+
+	_, err = c.db.Exec("CREATE INDEX geonameid_cities ON cities (geonameid);")
+	if err != nil {
+		panic(err)
 	}
 	_, err = c.db.Exec("CREATE INDEX asciiname ON cities (asciiname COLLATE NOCASE);")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	_, err = c.db.Exec("CREATE INDEX alternatenames ON cities (alternatenames COLLATE NOCASE);")
-	if err != nil {
-		log.Fatal(err)
-	}
+
 	_, err = c.db.Exec("CREATE INDEX population ON cities (population);")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
+	}
+
+	// Alternate names indexes
+	_, err = c.db.Exec("CREATE INDEX geonameid_alternatenames ON alternatenames (geonameid);")
+	if err != nil {
+		panic(err)
+	}
+	_, err = c.db.Exec("CREATE INDEX alternatename ON alternatenames (alternatename COLLATE NOCASE);")
+	if err != nil {
+		panic(err)
 	}
 }
 
 func (c *CityDB) createTables() {
+	// Cities table
 	sqlStmt := `
 		CREATE TABLE cities(
 			"geonameid" NUMERIC,
@@ -147,16 +161,39 @@ func (c *CityDB) createTables() {
 
 	_, err := c.db.Exec(sqlStmt)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
+	}
+
+	// Alternate names to geonameid table
+	sqlStmt = `
+		CREATE TABLE alternatenames(
+			"geonameid" NUMERIC,
+			"alternatename" TEXT
+		);
+	`
+
+	_, err = c.db.Exec(sqlStmt)
+	if err != nil {
+		panic(err)
 	}
 }
 
 func (c *CityDB) loadData() {
-	s := `INSERT INTO cities VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+	cs := `INSERT INTO cities VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+	ans := `INSERT INTO alternatenames VALUES(?,?)`
 	for _, city := range loadCityData() {
-		_, err := c.db.Exec(s, city.GeonameID, city.Name, city.ASCIIName, city.AlternateNames, city.Latitude, city.Longitude, city.FeatureClass, city.FeatureCode, city.CountryCode, city.CC2, city.Admin1Code, city.Admin2Code, city.Admin3Code, city.Admin4Code, city.Population, city.Elevation, city.Dem, city.Timezone, city.ModificationDate)
+		// Cities table
+		_, err := c.db.Exec(cs, city.GeonameID, city.Name, city.ASCIIName, city.AlternateNames, city.Latitude, city.Longitude, city.FeatureClass, city.FeatureCode, city.CountryCode, city.CC2, city.Admin1Code, city.Admin2Code, city.Admin3Code, city.Admin4Code, city.Population, city.Elevation, city.Dem, city.Timezone, city.ModificationDate)
 		if err != nil {
-			log.Printf("%q: %s\n", err, s)
+			log.Printf("%q: %s\n", err, cs)
+		}
+
+		// Alternate names to geonameid table
+		for _, alternateName := range strings.Split(city.AlternateNames, ",") {
+			_, err = c.db.Exec(ans, city.GeonameID, alternateName)
+			if err != nil {
+				log.Printf("%q: %s\n", err, ans)
+			}
 		}
 	}
 }
@@ -164,7 +201,7 @@ func (c *CityDB) loadData() {
 func (c *CityDB) createMemDB() *sql.DB {
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	return db
 }
@@ -173,13 +210,13 @@ func (c *CityDB) getCityDataFromQuery(q string, a ...any) []*CityData {
 	var o []*CityData
 	stmt, err := c.db.Prepare(q)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query(a...)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer rows.Close()
 
@@ -189,7 +226,7 @@ func (c *CityDB) getCityDataFromQuery(q string, a ...any) []*CityData {
 			&city.Longitude, &city.FeatureClass, &city.FeatureCode, &city.CountryCode, &city.CC2, &city.Admin1Code,
 			&city.Admin2Code, &city.Admin3Code, &city.Admin4Code, &city.Population, &city.Elevation, &city.Dem,
 			&city.Timezone, &city.ModificationDate); err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		o = append(o, &city)
 	}
@@ -214,8 +251,10 @@ func (c *COCO) CityNameToCity(name string, extendedSearch bool) (*CityData, erro
 		ci = c.CityDB.getCityDataFromQuery("SELECT * FROM cities WHERE asciiname=? COLLATE NOCASE ORDER BY population DESC LIMIT 1;", name)
 		if len(ci) > 0 {
 			return ci[0], nil
+
 		}
-		ci = c.CityDB.getCityDataFromQuery("SELECT * FROM cities WHERE alternatenames LIKE ? COLLATE NOCASE ORDER BY population DESC LIMIT 1;", "%"+name+"%")
+
+		ci := c.CityDB.getCityDataFromQuery("SELECT cities.* FROM cities INNER JOIN alternatenames ON cities.geonameid = alternatenames.geonameid WHERE alternatenames.alternatename = ? COLLATE NOCASE ORDER BY population DESC LIMIT 1;", name)
 		if len(ci) > 0 {
 			return ci[0], nil
 		}
