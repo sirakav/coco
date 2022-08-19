@@ -2,7 +2,6 @@ package coco
 
 import (
 	"errors"
-	"log"
 	"strconv"
 
 	"github.com/cornelk/hashmap"
@@ -126,7 +125,7 @@ func (c *COCO) matchCountryRegex(name string) (*CountryData, error) {
 	for _, c := range c.Countries {
 		m, err := c.Regex.MatchString(name)
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 
 		if m {

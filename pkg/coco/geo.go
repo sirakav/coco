@@ -1,8 +1,6 @@
 package coco
 
 import (
-	"log"
-
 	"github.com/sams96/rgeo"
 )
 
@@ -10,7 +8,7 @@ func loadRGEO() *rgeo.Rgeo {
 	// Can be changed to rgeo.Countries10 for perfomance improvements
 	r, err := rgeo.New(rgeo.Countries110)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	return r
 }

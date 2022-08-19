@@ -37,12 +37,18 @@ func TestCityNameToCityWithExtendedSearch(t *testing.T) {
 
 func BenchmarkCityNameToCityWithExtendedSearch(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		cc.CityNameToCity("Paryzius", true)
+		cc.CityNameToCity("paRyzius", true)
 	}
 }
 
 func BenchmarkCityNameToCity(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		cc.CityNameToCity("paris", false)
+		cc.CityNameToCity("LoNdon", false)
+	}
+}
+
+func BenchmarkCityNameToCityNotInDataSet(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		cc.CityNameToCity("HogansburG", true)
 	}
 }
