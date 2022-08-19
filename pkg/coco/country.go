@@ -9,8 +9,9 @@ import (
 	"github.com/dlclark/regexp2"
 	"github.com/gocarina/gocsv"
 
-	"github.com/sirakav/coco/resources"
 	"strings"
+
+	"github.com/sirakav/coco/resources"
 )
 
 type CompiledRegex struct {

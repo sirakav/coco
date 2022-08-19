@@ -10,7 +10,7 @@ import (
 
 type COCO struct {
 	Countries             []*CountryData
-	Cities                []*CityData
+	CityDB                *CityDB
 	iso2ToCountryHM       *hashmap.HashMap[string, *CountryData]
 	iso3ToCountryHM       *hashmap.HashMap[string, *CountryData]
 	isoNumericToCountryHM *hashmap.HashMap[string, *CountryData]
@@ -23,7 +23,7 @@ func NewCOCO() *COCO {
 	co := loadCountryData()
 	return &COCO{
 		Countries:             co,
-		Cities:                loadCityData(),
+		CityDB:                NewCityDB(),
 		iso2ToCountryHM:       getISO2ToCountryHM(co),
 		iso3ToCountryHM:       getISO3ToCountryHM(co),
 		isoNumericToCountryHM: getISONumericToCountryHM(co),

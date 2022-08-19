@@ -1,14 +1,17 @@
 package coco
 
 import (
-	"github.com/sirakav/coco/resources"
 	"encoding/csv"
+	"errors"
 	"io"
-	"sort"
-
+	"log"
 	"strings"
 
+	"database/sql"
+
 	"github.com/gocarina/gocsv"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/sirakav/coco/resources"
 )
 
 // List of strings
@@ -47,25 +50,39 @@ func (sl *StringList) MarshalCSV() (string, error) {
 // timezone          : the iana timezone id (see file timeZone.txt) varchar(40)
 // modification date : date of last modification in yyyy-MM-dd format
 type CityData struct {
-	GeonameID        int        `csv:"geonameid"`
-	Name             string     `csv:"name"`
-	ASCIIName        string     `csv:"asciiname"`
-	AlternateNames   StringList `csv:"alternatenames"`
-	Latitude         float64    `csv:"latitude"`
-	Longitude        float64    `csv:"longitude"`
-	FeatureClass     string     `csv:"feature_class"`
-	FeatureCode      string     `csv:"feature_code"`
-	CountryCode      string     `csv:"country_code"`
-	CC2              string     `csv:"cc2"`
-	Admin1Code       string     `csv:"admin1_code"`
-	Admin2Code       string     `csv:"admin2_code"`
-	Admin3Code       string     `csv:"admin3_code"`
-	Admin4Code       string     `csv:"admin4_code"`
-	Population       int        `csv:"population"`
-	Elevation        int        `csv:"elevation"`
-	Dem              int        `csv:"dem"`
-	Timezone         string     `csv:"timezone"`
-	ModificationDate string     `csv:"modification_date"`
+	GeonameID        int     `csv:"geonameid"`
+	Name             string  `csv:"name"`
+	ASCIIName        string  `csv:"asciiname"`
+	AlternateNames   string  `csv:"alternatenames"`
+	Latitude         float64 `csv:"latitude"`
+	Longitude        float64 `csv:"longitude"`
+	FeatureClass     string  `csv:"feature_class"`
+	FeatureCode      string  `csv:"feature_code"`
+	CountryCode      string  `csv:"country_code"`
+	CC2              string  `csv:"cc2"`
+	Admin1Code       string  `csv:"admin1_code"`
+	Admin2Code       string  `csv:"admin2_code"`
+	Admin3Code       string  `csv:"admin3_code"`
+	Admin4Code       string  `csv:"admin4_code"`
+	Population       int     `csv:"population"`
+	Elevation        int     `csv:"elevation"`
+	Dem              int     `csv:"dem"`
+	Timezone         string  `csv:"timezone"`
+	ModificationDate string  `csv:"modification_date"`
+}
+
+type CityDB struct {
+	db *sql.DB
+}
+
+func NewCityDB() *CityDB {
+	ciDB := &CityDB{}
+	ciDB.db = ciDB.createMemDB()
+	ciDB.createTables()
+	ciDB.loadData()
+	ciDB.createIndexes()
+
+	return ciDB
 }
 
 func loadCityData() []*CityData {
@@ -81,11 +98,102 @@ func loadCityData() []*CityData {
 		panic(err)
 	}
 
-	// Sort by population because we only return the cities with the highest population
-	sort.Slice(c, func(i, j int) bool {
-		return c[i].Population > c[j].Population
-	})
 	return c
+}
+
+func (c *CityDB) createIndexes() {
+	_, err := c.db.Exec("CREATE INDEX name ON cities (name COLLATE NOCASE);")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = c.db.Exec("CREATE INDEX asciiname ON cities (asciiname COLLATE NOCASE);")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = c.db.Exec("CREATE INDEX alternatenames ON cities (alternatenames COLLATE NOCASE);")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = c.db.Exec("CREATE INDEX population ON cities (population);")
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (c *CityDB) createTables() {
+	sqlStmt := `
+		CREATE TABLE cities(
+			"geonameid" NUMERIC,
+			"name" TEXT,
+			"asciiname" TEXT,
+			"alternatenames" TEXT,
+			"latitude" NUMERIC,
+			"longitude" NUMERIC,
+			"feature_class" TEXT,
+			"feature_code" TEXT,
+			"country_code" TEXT,
+			"cc2" TEXT,
+			"admin1_code" TEXT,
+			"admin2_code" TEXT,
+			"admin3_code" TEXT,
+			"admin4_code" TEXT,
+			"population" INT,
+			"elevation" INT,
+			"dem" INT,
+			"timezone" TEXT,
+			"modification_date" TEXT
+		);
+	`
+
+	_, err := c.db.Exec(sqlStmt)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (c *CityDB) loadData() {
+	s := `INSERT INTO cities VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+	for _, city := range loadCityData() {
+		_, err := c.db.Exec(s, city.GeonameID, city.Name, city.ASCIIName, city.AlternateNames, city.Latitude, city.Longitude, city.FeatureClass, city.FeatureCode, city.CountryCode, city.CC2, city.Admin1Code, city.Admin2Code, city.Admin3Code, city.Admin4Code, city.Population, city.Elevation, city.Dem, city.Timezone, city.ModificationDate)
+		if err != nil {
+			log.Printf("%q: %s\n", err, s)
+		}
+	}
+}
+
+func (c *CityDB) createMemDB() *sql.DB {
+	db, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return db
+}
+
+func (c *CityDB) getCityDataFromQuery(q string, a ...any) []*CityData {
+	var o []*CityData
+	stmt, err := c.db.Prepare(q)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(a...)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var city CityData
+		if err := rows.Scan(&city.GeonameID, &city.Name, &city.ASCIIName, &city.AlternateNames, &city.Latitude,
+			&city.Longitude, &city.FeatureClass, &city.FeatureCode, &city.CountryCode, &city.CC2, &city.Admin1Code,
+			&city.Admin2Code, &city.Admin3Code, &city.Admin4Code, &city.Population, &city.Elevation, &city.Dem,
+			&city.Timezone, &city.ModificationDate); err != nil {
+			log.Fatal(err)
+		}
+		o = append(o, &city)
+	}
+	return o
 }
 
 // Returns city with highest population for the given city name
@@ -98,27 +206,19 @@ func loadCityData() []*CityData {
 // name - the name of the city
 // extendedSearch - if true, we will search for the city in the alternate names
 func (c *COCO) CityNameToCity(name string, extendedSearch bool) (*CityData, error) {
-	for _, ci := range c.Cities {
-		if strings.EqualFold(ci.Name, name) {
-			return ci, nil
+	ci := c.CityDB.getCityDataFromQuery("SELECT * FROM cities WHERE name=? COLLATE NOCASE ORDER BY population DESC LIMIT 1;", name)
+	if len(ci) > 0 {
+		return ci[0], nil
+	}
+	if extendedSearch {
+		ci = c.CityDB.getCityDataFromQuery("SELECT * FROM cities WHERE asciiname=? COLLATE NOCASE ORDER BY population DESC LIMIT 1;", name)
+		if len(ci) > 0 {
+			return ci[0], nil
+		}
+		ci = c.CityDB.getCityDataFromQuery("SELECT * FROM cities WHERE alternatenames LIKE ? COLLATE NOCASE ORDER BY population DESC LIMIT 1;", "%"+name+"%")
+		if len(ci) > 0 {
+			return ci[0], nil
 		}
 	}
-
-	if !extendedSearch {
-		return &CityData{}, &CityNotFoundError{}
-	}
-
-	for _, ci := range c.Cities {
-		if strings.EqualFold(ci.ASCIIName, name) {
-			return ci, nil
-		}
-	}
-	for _, ci := range c.Cities {
-		for _, an := range ci.AlternateNames.List {
-			if strings.EqualFold(an, name) {
-				return ci, nil
-			}
-		}
-	}
-	return &CityData{}, &CityNotFoundError{}
+	return &CityData{}, errors.New("city not found")
 }
