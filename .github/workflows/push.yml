@@ -1,0 +1,22 @@
+name: gobenchdata publish
+on: push
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup
+      uses: actions/setup-go@v3
+      with:
+        go-version: '^1.19.0'
+
+    - name: Gobenchdata publish
+      run: go run go.bobheadxi.dev/gobenchdata@v1 action
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        INPUT_PRUNE_COUNT: 30
+        INPUT_GO_TEST_FLAGS: -cpu 1,2
+        INPUT_PUBLISH: true
+        INPUT_PUBLISH_BRANCH: gh-pages
