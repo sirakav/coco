@@ -8,8 +8,8 @@ github.com/cenkalti/backoff v2.1.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QH
 github.com/cespare/xxhash v1.1.0 h1:a6HrQnmkObjyL+Gs60czilIUGqrzKutQD6XZog3p+ko=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
 github.com/containerd/continuity v0.0.0-20181203112020-004b46473808/go.mod h1:GL3xCUCBDV3CZiTSEKksMWbLE66hEyuu9qyDOOqM47Y=
-github.com/cornelk/hashmap v1.0.4 h1:cAsJivnPU+64xO9jnt32znEAX/QZHYf+p06pu1bdjfk=
-github.com/cornelk/hashmap v1.0.4/go.mod h1:DqXRj31DMSQGWQJit5c3jpIErEoTlZYmKhAlBGrf0Sw=
+github.com/cornelk/hashmap v1.0.5 h1:FetMxz5XPtcXrP1hIbAhsCGyj6L4aa8E+wLS5UrqKm8=
+github.com/cornelk/hashmap v1.0.5/go.mod h1:DqXRj31DMSQGWQJit5c3jpIErEoTlZYmKhAlBGrf0Sw=
 github.com/d4l3k/messagediff v1.2.1 h1:ZcAIMYsUg0EAp9X+tt8/enBE/Q8Yd5kzPynLyKptt9U=
 github.com/d4l3k/messagediff v1.2.1/go.mod h1:Oozbb1TVXFac9FtSIxHBMnBCq2qeH/2KkEQxENCrlLo=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
