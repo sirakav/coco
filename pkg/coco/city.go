@@ -199,7 +199,7 @@ func (c *CityDB) loadData() {
 }
 
 func (c *CityDB) createMemDB() *sql.DB {
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite3", "file::memory:?cache=shared")
 	if err != nil {
 		panic(err)
 	}
