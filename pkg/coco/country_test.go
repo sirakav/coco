@@ -16,13 +16,13 @@ func TestCountryNameToCountry(t *testing.T) {
 }
 
 func TestCountryNameToCountryWithRegexInput(t *testing.T) {
-	co, err := cc.CountryNameToCountry("France", "regex")
+	co, err := cc.CountryNameToCountry("United Kingdom", "regex")
 
 	if err != nil {
 		t.Error(err)
 	}
-	if co.ISO2 != "FR" {
-		t.Error("Expected FR, got", co.ISO2)
+	if co.ISO2 != "GB" {
+		t.Error("Expected GB, got", co.ISO2)
 	}
 }
 
